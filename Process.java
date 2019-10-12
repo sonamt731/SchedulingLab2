@@ -1,5 +1,9 @@
 //package scheduling;
-
+/*
+ * This class implements the Process class. It stores each process' a, b, c, m, remaining CPU Time (C), IO Bursts, CPU Bursts, 
+ * process states and process numbers. 
+ * 
+ */
 import java.io.*;
 import java.util.*;
 

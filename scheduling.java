@@ -1,5 +1,9 @@
 //package scheduling;
-
+/**
+ * Project 2: Scheduling Algorithm 
+ * Author: Sonam Tailor 
+ * Collaborated with Christina Liu 
+ */
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -42,7 +46,7 @@ public class scheduling {
 
 		int numProcesses = input.nextInt(); 
 		
-		//Queue to store the process objects
+		//Queue to store the process objects - different processes for each algorithm 
 		Queue<Process> processes1 = new LinkedList<Process>(); 
 		Queue<Process> processes2 = new LinkedList<Process>(); 
 		Queue<Process> processes3 = new LinkedList<Process>();
@@ -77,21 +81,23 @@ public class scheduling {
 		Arrays.sort(startIndices);
 		FCFS(processes1,numProcesses,verbose, startIndices);
 		System.out.println("-------------------------------------------------");
-		//RR(processes2, numProcesses, verbose, startIndices);
+		RR(processes2, numProcesses, verbose, startIndices);
 		System.out.println("-------------------------------------------------");
-		//SJF(processes3, numProcesses, verbose, startIndices);
+		SJF(processes3, numProcesses, verbose, startIndices);
 		System.out.println("-------------------------------------------------");
-		//HPRN(processes4, numProcesses, verbose, startIndices);
+		HPRN(processes4, numProcesses, verbose, startIndices);
 	}
 	
 	public static void FCFS(Queue<Process> processes, int numProcesses, Boolean verbose, int[] ordering) throws FileNotFoundException {
-		HashMap<Process, Integer> map = new HashMap<Process, Integer>();
 		System.out.print("The original input was: " + numProcesses);
 		printInput(processes, numProcesses);
 		System.out.print("The (sorted) input is: " + numProcesses);
 		//sorted order for FCFS
 		Queue<Process> temp = new LinkedList<Process>(); //temp sorted queue
 		float CPUTime = 0;
+		
+		//Data structures to hold the processes with the respective states
+		Queue<Process> finishedProc = new LinkedList<Process>();
 		
 		//sort the queue 
 		
@@ -113,13 +119,13 @@ public class scheduling {
 			
 		int cycle = 0; //to store the cycle #
 		Process addToEnd;
-		Queue<Process> finishedProc = new LinkedList<Process>();
 		
 		System.out.println();
 		if (verbose) {
 			System.out.println("This detailed printout gives the state and remaining burst for each process");	
 		}	
 			//first process has not started
+		
 			while (cycle<=ordering[0]) {
 				if(verbose) {
 					System.out.print("\nBefore cycle \t"+ cycle+":");
@@ -141,13 +147,6 @@ public class scheduling {
 				}
 				for (Process c: processes) {
 					
-					if(c!=null) {
-						map.put(c,c.CPUBurst);
-					}
-					
-					if(c.CPUBurst <= 0) {
-						c.CPUBurst = map.get(c)*c.IOBurst;
-					}
 					//case that it is first element of queue and in state running, ready, or unstarted
 					if(c.state != "blocked" && processes.peek()==c && cycle>c.a) {
 						if(c.CPUBurst == 0 && c.IOBurst == 0) {
@@ -603,161 +602,165 @@ public class scheduling {
 		
 		
 	public static void SJF(Queue<Process> processes, int numProcesses, Boolean verbose, int[] ordering) throws FileNotFoundException {
+		//HashMap<Process, Integer> map = new  HashMap<Process, Integer>();
 		System.out.print("The original input was: " + numProcesses);
 		printInput(processes, numProcesses);
 		System.out.print("The (sorted) input is: " + numProcesses);
 		//sorted order for SJF
-		Queue<Process> temp = new LinkedList<Process>(); //temp sorted queue
+	     //temp sorted queue
+		Queue<Process> temp = new LinkedList<Process>();
 		float CPUTime = 0;
 		
 		//sort the queue 
 		int i = 0;
-		for(int j = 0; j < ordering.length; j++) {
-			for (Process c : processes) {
-				if(c.a == ordering[j]) {
-					c.processNum = i;
-					temp.add(c);
-					processes.remove(c);
-					break;
+		while(!processes.isEmpty()) {
+			int front = ordering[i];
+				for(Process c: processes) {
+					if (c.a < front) {
+					Process addtoEnd = processes.poll();
+					temp.add(addtoEnd);
 				}
 			}
+			Process add = processes.poll();
+			temp.add(add);
 			i++;
 		}
 		processes = temp;
 		//print sorted input
-				printInput(processes, numProcesses);
-					
-				int cycle = 0; //to store the cycle #
-				Process addToEnd;
-				Queue<Process> finishedProc = new LinkedList<Process>();
+		printInput(processes, numProcesses);
+			
+		int cycle = 0; //to store the cycle #
+		Process addToEnd;
+		Queue<Process> finishedProc = new LinkedList<Process>();
+		
+		System.out.println();
+		if (verbose) {
+			System.out.println("This detailed printout gives the state and remaining burst for each process");	
+		}	
+	
+			//first process has not started
+			while (cycle<=ordering[0]) {
+				if(verbose) {
+					System.out.print("\nBefore cycle \t"+ cycle+":");
 				
-				System.out.println();
-				if (verbose) {
-					System.out.println("This detailed printout gives the state and remaining burst for each process");	
-				}	
-					//first process has not started
-					while (cycle<=ordering[0]) {
-						if(verbose) {
-							System.out.print("\nBefore cycle \t"+ cycle+":");
+				for(Process c: processes) {
+					System.out.printf("\t"+c.state+"%2s",0);
+				}
+				}
+				cycle++;
+			}
+			
+			String[] states = new String[numProcesses];
+			//will store the integer state of each process
+			int[] statenum = new int[numProcesses];
+			
+			while(!processes.isEmpty()) {
+				if(verbose) {
+					System.out.print("\nBefore cycle \t"+cycle+":");
+				}
+				for (Process c: processes) {
+					//case that it is first element of queue and in state running, ready, or unstarted
+					if(c.state != "blocked" && processes.peek()==c && cycle>c.a) {
+						if(c.CPUBurst == 0 && c.IOBurst == 0) {
+							
+							c.setCPUburst(c.b);
+							indexOfRandom++;
+						}
+						c.state = "running";
+						//store state before decrementing CPU burst
+						statenum[c.processNum]=c.CPUBurst;
+						c.CPUBurst--;
+						CPUTime++;
 						
-						for(Process c: processes) {
-							System.out.printf("\t"+c.state+"%2s",0);
+						//decrease total remaining time
+						c.C-=1;
+						
+						states[c.processNum]="running";
+						
+						if(c.CPUBurst== 0 && c.IOBurst!=0) {
+							c.state = "blocked";
 						}
-						}
-						cycle++;
 					}
 					
-					String[] states = new String[numProcesses];
-					//will store the integer state of each process
-					int[] statenum = new int[numProcesses];
+					//unstarted or ready state
+					else if(c.state == "unstarted" || c.state == "ready") {
+						if (c.state == "unstarted" && cycle<=c.a) {
+							states[c.processNum] = "unstarted";
+							//if it is unstarted integer state is 0
+							statenum[c.processNum] = 0;
+						}
+						else {
+							c.state = "ready";
+							c.waitTime+=1;
+							states[c.processNum]="ready";
+							statenum[c.processNum]=0;
+						}
+					}
 					
-					while(!processes.isEmpty()) {
-						if(verbose) {
-							System.out.print("\nBefore cycle \t"+cycle+":");
+					//case that process is blocked
+					else {
+						//store integer state before decrementing
+						statenum[c.processNum] = c.IOBurst;
+						c.IOBurst-=1;
+						c.ioTime+=1;
+						states[c.processNum]="blocked";
+						if(c.IOBurst==0) {
+							c.state = "ready";
 						}
-						for (Process c: processes) {
-							//case that it is first element of queue and in state running, ready, or unstarted
-							if(c.state != "blocked" && processes.peek()==c && cycle>c.a) {
-								if(c.CPUBurst == 0 && c.IOBurst == 0) {
-									
-									c.setCPUburst(c.b);
-									indexOfRandom++;
-								}
-								c.state = "running";
-								//store state before decrementing CPU burst
-								statenum[c.processNum]=c.CPUBurst;
-								c.CPUBurst--;
-								CPUTime++;
-								
-								//decrease total remaining time
-								c.C-=1;
-								
-								states[c.processNum]="running";
-								
-								if(c.CPUBurst== 0 && c.IOBurst!=0) {
-									c.state = "blocked";
-								}
-							}
-							
-							//unstarted or ready state
-							else if(c.state == "unstarted" || c.state == "ready") {
-								if (c.state == "unstarted" && cycle<=c.a) {
-									states[c.processNum] = "unstarted";
-									//if it is unstarted integer state is 0
-									statenum[c.processNum] = 0;
-								}
-								else {
-									c.state = "ready";
-									c.waitTime+=1;
-									states[c.processNum]="ready";
-									statenum[c.processNum]=0;
-								}
-							}
-							
-							//case that process is blocked
-							else {
-								//store integer state before decrementing
-								statenum[c.processNum] = c.IOBurst;
-								c.IOBurst-=1;
-								c.ioTime+=1;
-								states[c.processNum]="blocked";
-								if(c.IOBurst==0) {
-									c.state = "ready";
-								}
-							}
-						}
-						if (!processes.isEmpty() && (processes.peek().state == "blocked" || processes.peek().state == "unstarted")) {
+					}
+				}
+				if (!processes.isEmpty() && (processes.peek().state == "blocked" || processes.peek().state == "unstarted")) {
+					addToEnd = processes.poll();
+					processes.add(addToEnd);
+					
+				
+					while(processes.peek().state=="unstarted" && (cycle<=processes.peek().a)) {
+							states[processes.peek().processNum]= "unstarted";
 							addToEnd = processes.poll();
 							processes.add(addToEnd);
-							
-						
-							while(processes.peek().state=="unstarted" && (cycle<=processes.peek().a)) {
-									states[processes.peek().processNum]= "unstarted";
-									addToEnd = processes.poll();
-									processes.add(addToEnd);
-							
-							}
-						}
-						if (verbose) {
-							printVerbose(states, statenum);
-						}
-						
-						for(Process c: processes) {
-							if (c.C == 0) {
-								c.state = "terminated";
-								states[c.processNum]="terminated";
-								statenum[c.processNum]= 0;
-								c.finishingTime = cycle;
-								//add to list of completed
-								finishedProc.add(c);
-								processes.remove(c);
-								
-							}
-						}
-						cycle++;
-						
+					
+					}
+				}
+				if (verbose) {
+					printVerbose(states, statenum);
 				}
 				
-				System.out.println("\nThe scheduling algorithm used was Shortest Job First ");
-				System.out.println("");
-				
-				int index = 0;
-				float totalturn = 0;
-				float totalWait = 0;
-				float totalIO = 0;
-				
-				//need to sort the finishedProc 
-				finishedProc = sortFinished(ordering, finishedProc);
-				
-				for (Process c: finishedProc) {
-					printOutput(c,index);
-					totalturn += (c.finishingTime - c.a);
-					totalWait += c.waitTime;
-					totalIO += c.ioTime;
-					index++;
+				for(Process c: processes) {
+					if (c.C == 0) {
+						c.state = "terminated";
+						states[c.processNum]="terminated";
+						statenum[c.processNum]= 0;
+						c.finishingTime = cycle;
+						//add to list of completed
+						finishedProc.add(c);
+						processes.remove(c);
+						
+					}
 				}
+				cycle++;
 				
-				printSummary(numProcesses, cycle-1, totalturn, totalWait, totalIO, CPUTime);
+		}
+		
+		System.out.println("\nThe scheduling algorithm used was Shortest Job First ");
+		System.out.println("");
+		
+		int index = 0;
+		float totalturn = 0;
+		float totalWait = 0;
+		float totalIO = 0;
+		
+		//need to sort the finishedProc 
+		finishedProc = sortFinished(ordering, finishedProc);
+		
+		for (Process c: finishedProc) {
+			printOutput(c,index);
+			totalturn += (c.finishingTime - c.a);
+			totalWait += c.waitTime;
+			totalIO += c.ioTime;
+			index++;
+		}
+		
+		printSummary(numProcesses, cycle-1, totalturn, totalWait, totalIO, CPUTime);
 
 	}
 	
@@ -872,6 +875,24 @@ class ComparatorByRatio implements Comparator<Object>{
 			else {
 				return -1;
 			}
+		}
+	}
+	
+}
+
+class comparePriority implements Comparator<Object>{
+
+	@Override
+	public int compare(Object proc1, Object proc2) {
+		Process pro1 = (Process)proc1;
+		Process pro2 = (Process)proc2;
+		
+		if(pro1.sortedPriority>pro2.sortedPriority) {
+			return 1;
+		}
+		// TODO Auto-generated method stub
+		else {
+			return -1;
 		}
 	}
 	
